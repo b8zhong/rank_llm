@@ -85,8 +85,17 @@ class RankListwiseOSLLM(RankLLM):
                 "Please install rank-llm with `pip install rank-llm[vllm]` to use batch inference."
             )
         elif vllm_batched:
+            if model in ["mistralai/Mistral-Large-Instruct-2407"]:
+                ignore_patterns = ["*consolidated*"]
+            else:
+                ignore_patterns = []
             self._llm = LLM(
-                model, download_dir=os.getenv("HF_HOME"), enforce_eager=False
+                model,
+                download_dir=os.getenv("HF_HOME"),
+                enforce_eager=False,
+                tensor_parallel_size=num_gpus,
+                max_model_len=111232,
+                ignore_patterns=ignore_patterns,
             )
             self._tokenizer = self._llm.get_tokenizer()
         else:

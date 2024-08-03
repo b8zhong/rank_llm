@@ -60,7 +60,12 @@ def retrieve_and_rerank(
             keys=openai_keys,
             **(get_azure_openai_args() if use_azure_openai else {}),
         )
-    elif "vicuna" in model_path.lower() or "zephyr" in model_path.lower():
+    elif (
+        "vicuna" in model_path.lower()
+        or "zephyr" in model_path.lower()
+        or "llama" in model_path.lower()
+        or "mistral" in model_path.lower()
+    ):
         if model_path.lower() == "rank_zephyr":
             model_full_path = "castorini/rank_zephyr_7b_v1_full"
         elif model_path.lower() == "rank_vicuna":
@@ -143,11 +148,21 @@ def retrieve_and_rerank(
             populate_exec_summary=populate_exec_summary,
         )
 
-        if num_passes > 1:
+        if num_passes > 1 and pass_ct < num_passes - 1:
             requests = [
                 Request(copy.deepcopy(r.query), copy.deepcopy(r.candidates))
                 for r in rerank_results
             ]
+            if isinstance(dataset, str):
+                file_name = reranker.write_rerank_results(
+                    retrieval_method.name,
+                    rerank_results,
+                    shuffle_candidates,
+                    top_k_candidates=top_k_retrieve,
+                    pass_ct=None if num_passes == 1 else pass_ct,
+                    window_size=window_size,
+                    dataset_name=dataset,
+                )
     print(f"Reranking with {num_passes} passes complete!")
     for rr in rerank_results:
         rr.candidates = rr.candidates[:top_k_rerank]

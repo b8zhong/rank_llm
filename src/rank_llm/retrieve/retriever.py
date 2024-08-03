@@ -177,14 +177,26 @@ class Retriever:
             else:
                 print("Reusing existing retrieved results.")
                 md5_local = compute_md5(candidates_file)
-                if HITS_INFO[query_name]["md5"] != md5_local:
+                if (
+                    query_name in HITS_INFO
+                    and HITS_INFO[query_name]["md5"] != md5_local
+                ):
                     print("Query Cache MD5 does not match Local")
-                with open(candidates_file, "r") as f:
-                    retrieved_results = []
-                    for line in f:
-                        retrieved_results.append(
-                            from_dict(data_class=Request, data=json.loads(line))
-                        )
+                try:
+                    with open(candidates_file, "r") as f:
+                        retrieved_results = []
+                        for line in f:
+                            retrieved_results.append(
+                                from_dict(data_class=Request, data=json.loads(line))
+                            )
+                except:
+                    # Perhaps a UTF-8 issue
+                    with open(candidates_file, "r", encoding="utf-8") as f:
+                        retrieved_results = []
+                        for line in f:
+                            retrieved_results.append(
+                                from_dict(data_class=Request, data=json.loads(line))
+                            )
 
         elif self._retrieval_mode == RetrievalMode.CUSTOM:
             candidates_file = Path(
@@ -204,8 +216,13 @@ class Retriever:
                 retrieved_results = pyserini.retrieve_and_store(k=k)
             else:
                 print("Reusing existing retrieved results.")
-                with open(candidates_file, "r") as f:
-                    loaded_results = json.load(f)
+                try:
+                    with open(candidates_file, "r") as f:
+                        loaded_results = json.load(f)
+                except:
+                    # Perhaps a UTF-8 issue
+                    with open(candidates_file, "r", encoding="utf-8") as f:
+                        loaded_results = json.load(f)
                 retrieved_results = [
                     from_dict(data_class=Request, data=r) for r in loaded_results
                 ]
